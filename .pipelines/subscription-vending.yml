@@ -1,0 +1,285 @@
+trigger: none
+pr: none
+
+parameters:
+# Required. Subscription ID to process.
+- name: SubscriptionId
+  type: string
+  default: ''
+  displayName: 'Subscription ID'
+
+# Default value is applied in PrepareSubscription if not overridden.
+- name: SubscriptionName
+  type: string
+  default: 'Subscription Name'
+  displayName: 'New subscription name'
+
+# Default source MG used during validation and final move.
+- name: SourceManagementGroupId
+  type: string
+  default: 'mg-subscriptions-staging'
+  displayName: 'Expected source management group'
+
+# Required. Target MG for final subscription placement.
+- name: TargetManagementGroupId
+  type: string
+  default: ''
+  displayName: 'Target management group'
+
+# Bootstrap deployment region.
+- name: deploymentPath
+  type: string
+  default: 'germanywestcentral'
+  displayName: 'Bootstrap region'
+
+# Bootstrap resource group name.
+- name: BootstrapResourceGroupName
+  type: string
+  default: 'rg-bootstrap'
+  displayName: 'Bootstrap resource group name'
+
+# Required. Existing/new UAMI name for bootstrap operations.
+- name: BootstrapManagedIdentityName
+  type: string
+  default: ''
+  displayName: 'Bootstrap UAMI name (ex: id_uami_applicationname)'
+
+# Provider registration profile used in prepare stage.
+- name: ProviderGroup
+  type: string
+  default: 'applications'
+  values:
+    - applications
+    - platform
+  displayName: 'Provider registration group'
+
+# Optional if service connection creation is disabled.
+- name: ServiceConnectionName
+  type: string
+  default: ''
+  displayName: 'Azure DevOps service connection name (ex: sc_uami_applicationname)'
+
+# Required when ServiceConnectionName is provided.
+- name: AzureDevOpsProjectName
+  type: string
+  default: ''
+  displayName: 'Azure DevOps project name'
+
+# If true, pipeline prepares/publishes service connection manifest.
+- name: CreateServiceConnection
+  type: boolean
+  default: true
+  displayName: 'Create Service Connection (requires Endpoint Creators permission in target project)'
+
+
+pool:
+  name: '$(devops_runner_pool_name)'
+
+variables:
+- group: 'default'
+- name: BootstrapTemplateFile
+  value: 'bicep/bootstrap.bicep'
+
+stages:
+- stage: ValidateInput
+  displayName: 'Validate Input'
+  jobs:
+  - job: Validate
+    displayName: 'Validate subscription vending input'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Validate input and current state'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode validate
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --subscription-name "${{ parameters.SubscriptionName }}"
+          --source-management-group-id ${{ parameters.SourceManagementGroupId }}
+          --target-management-group-id ${{ parameters.TargetManagementGroupId }}
+          --deployment-path ${{ parameters.deploymentPath }}
+          --bootstrap-resource-group-name ${{ parameters.BootstrapResourceGroupName }}
+          --bootstrap-managed-identity-name ${{ parameters.BootstrapManagedIdentityName }}
+          --provider-group ${{ parameters.ProviderGroup }}
+          --bootstrap-template-file $(BootstrapTemplateFile)
+          --service-connection-name "${{ parameters.ServiceConnectionName }}"
+          --azure-devops-project-name "${{ parameters.AzureDevOpsProjectName }}"
+
+- stage: PrepareSubscription
+  displayName: 'Prepare Subscription'
+  dependsOn:
+    - ValidateInput
+  condition: succeeded()
+  jobs:
+  - job: Prepare
+    displayName: 'Rename subscription and register providers'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Prepare subscription'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode prepare
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --subscription-name "${{ parameters.SubscriptionName }}"
+          --provider-group ${{ parameters.ProviderGroup }}
+
+- stage: BootstrapAzure
+  displayName: 'Bootstrap Azure'
+  dependsOn:
+    - PrepareSubscription
+  condition: succeeded()
+  jobs:
+  - job: Bootstrap
+    displayName: 'Deploy bootstrap resources'
+    steps:
+    - checkout: self
+      fetchDepth: 1
+    - task: AzureCLI@2
+      displayName: 'Deploy bootstrap Bicep'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode bootstrap
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --deployment-path ${{ parameters.deploymentPath }}
+          --bootstrap-resource-group-name ${{ parameters.BootstrapResourceGroupName }}
+          --bootstrap-managed-identity-name ${{ parameters.BootstrapManagedIdentityName }}
+          --bootstrap-template-file $(BootstrapTemplateFile)
+
+- stage: ConfigureAccess
+  displayName: 'Configure Access'
+  dependsOn:
+    - BootstrapAzure
+  condition: succeeded()
+  jobs:
+  - job: AssignRbac
+    displayName: 'Assign RBAC to bootstrap UAMI'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Assign UAMI roles on subscription'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode rbac
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --bootstrap-resource-group-name ${{ parameters.BootstrapResourceGroupName }}
+          --bootstrap-managed-identity-name ${{ parameters.BootstrapManagedIdentityName }}
+
+- stage: ConfigureDevOps
+  displayName: 'Configure DevOps'
+  dependsOn:
+    - ConfigureAccess
+  condition: and(succeeded(), eq('${{ parameters.CreateServiceConnection }}', true))
+  jobs:
+  - job: PrepareServiceConnection
+    displayName: 'Prepare OIDC service connection manifest'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Prepare service connection payload'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode service-connection-manifest
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --bootstrap-resource-group-name ${{ parameters.BootstrapResourceGroupName }}
+          --bootstrap-managed-identity-name ${{ parameters.BootstrapManagedIdentityName }}
+          --service-connection-name "${{ parameters.ServiceConnectionName }}"
+          --azure-devops-project-name "${{ parameters.AzureDevOpsProjectName }}"
+      env:
+        PIPELINE_ARTIFACTSTAGINGDIRECTORY: $(Pipeline.ArtifactStagingDirectory)
+        AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+    - publish: '$(Pipeline.ArtifactStagingDirectory)'
+      artifact: subscription-vending-service-connection
+      displayName: 'Publish service connection manifest'
+
+- stage: VerifyBootstrap
+  displayName: 'Verify Bootstrap'
+  dependsOn:
+    - ConfigureDevOps
+    - ConfigureAccess
+  condition: and(succeeded('ConfigureAccess'), in(dependencies.ConfigureDevOps.result, 'Succeeded', 'Skipped'))
+  jobs:
+  - job: VerifyBootstrap
+    displayName: 'Verify bootstrap result'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Verify bootstrap state'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode verify-bootstrap
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --bootstrap-resource-group-name ${{ parameters.BootstrapResourceGroupName }}
+          --bootstrap-managed-identity-name ${{ parameters.BootstrapManagedIdentityName }}
+          --service-connection-name "${{ parameters.ServiceConnectionName }}"
+          --azure-devops-project-name "${{ parameters.AzureDevOpsProjectName }}"
+
+- stage: FinalMove
+  displayName: 'Final Move'
+  dependsOn:
+    - VerifyBootstrap
+  condition: succeeded()
+  jobs:
+  - job: MoveSubscription
+    displayName: 'Move subscription to target MG'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Move subscription'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode move
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --source-management-group-id ${{ parameters.SourceManagementGroupId }}
+          --target-management-group-id ${{ parameters.TargetManagementGroupId }}
+
+- stage: VerifyFinal
+  displayName: 'Verify Final'
+  dependsOn:
+    - FinalMove
+  condition: succeeded()
+  jobs:
+  - job: VerifyFinal
+    displayName: 'Verify final subscription state'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Verify final placement in target MG'
+      inputs:
+        visibleAzLogin: false
+        azureSubscription: '$(devops_service_connection_name)'
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        arguments: >-
+          --mode verify-final
+          --subscription-id ${{ parameters.SubscriptionId }}
+          --target-management-group-id ${{ parameters.TargetManagementGroupId }}
