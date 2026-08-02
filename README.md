@@ -15,8 +15,8 @@ Azure DevOps pipeline for automated subscription provisioning and placement with
 ## Repository structure
 
 ```
-.pipelines/subscription-vending.yml   # Azure DevOps pipeline
-bin/subscriptionVendingBootstrap.sh   # Bootstrap script (bash)
+.pipelines/subscriptionVending.yml    # Azure DevOps pipeline
+bin/subscriptionVending.sh            # Subscription vending script (bash)
 bicep/bootstrap.bicep                 # Bicep template for bootstrap resources
 parameters/subscriptionVending.json   # Provider registration groups and UAMI role definitions
 ```

@@ -15,8 +15,8 @@ Pipeline Azure DevOps do automatycznego przygotowania subskrypcji i umieszczania
 ## Struktura repozytorium
 
 ```
-.pipelines/subscription-vending.yml   # Pipeline Azure DevOps
-bin/subscriptionVendingBootstrap.sh   # Skrypt bootstrap (bash)
+.pipelines/subscriptionVending.yml    # Pipeline Azure DevOps
+bin/subscriptionVending.sh            # Skrypt subscription vending (bash)
 bicep/bootstrap.bicep                 # Szablon Bicep dla zasobów bootstrap
 parameters/subscriptionVending.json   # Grupy rejestracji providerów i definicje ról UAMI
 SUBSCRIPTION_VENDING_RUNBOOK.md       # Instrukcja operatora: konfiguracja RBAC i checklist

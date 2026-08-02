@@ -94,7 +94,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode validate
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -125,7 +125,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode prepare
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -150,7 +150,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode bootstrap
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -175,7 +175,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode rbac
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -198,7 +198,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode service-connection-manifest
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -230,7 +230,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode verify-bootstrap
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -255,7 +255,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode move
           --subscription-id ${{ parameters.SubscriptionId }}
@@ -278,7 +278,7 @@ stages:
         azureSubscription: '$(devops_service_connection_name)'
         scriptType: bash
         scriptLocation: scriptPath
-        scriptPath: 'bin/subscriptionVendingBootstrap.sh'
+        scriptPath: 'bin/subscriptionVending.sh'
         arguments: >-
           --mode verify-final
           --subscription-id ${{ parameters.SubscriptionId }}
