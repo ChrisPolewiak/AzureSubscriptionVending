@@ -1,4 +1,4 @@
-# Subscription Vending
+# Azure Subscription Vending
 
 Pipeline Azure DevOps do automatycznego provisioningu subskrypcji i umieszczania ich w strukturze Management Group.
 
