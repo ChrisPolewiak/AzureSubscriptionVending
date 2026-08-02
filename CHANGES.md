@@ -20,4 +20,4 @@ Initial public release of the Azure Subscription Vending solution.
 
 ### Notes
 
-- This solution was prepared with AI assistance from GitHub Copilot and Claude Code.
+- During development, AI tools (GitHub Copilot and Claude Code) were used to support research and documentation, while architecture and implementation decisions were finalized by the author.

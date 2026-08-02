@@ -2,7 +2,7 @@
 
 Azure DevOps pipeline for automated subscription provisioning and placement within the Management Group hierarchy.
 
-> Note: This solution was prepared with AI assistance from GitHub Copilot and Claude Code.
+> Note: During development, AI tools (GitHub Copilot and Claude Code) were used to support research, drafting, and documentation, while architecture decisions, validation, and final implementation choices were made by the author.
 
 ## What it does
 
@@ -19,7 +19,7 @@ Azure DevOps pipeline for automated subscription provisioning and placement with
 ```
 .pipelines/subscription-vending.yml   # Azure DevOps pipeline
 bin/subscriptionVendingBootstrap.sh   # Bootstrap script (bash)
-bicep/bootstrap.bicep                # Bicep template for bootstrap resources
+bicep/bootstrap.bicep                 # Bicep template for bootstrap resources
 parameters/subscriptionVending.json   # Provider registration groups and UAMI role definitions
 ```
 
@@ -54,7 +54,7 @@ Required and optional parameters:
 
 Automated Azure subscription creation with a minimal set of resources and placement in the correct Management Group.
 
-Prerequisite:
+Prerequisites:
 
 - A dedicated Management Group branch for empty/staging subscriptions is required. The pipeline performs bootstrap operations and RBAC assignments within this branch.
 
@@ -96,7 +96,7 @@ The target stage order (MOVE at the end):
 
 ## 4. Step-by-step: granting RBAC roles for the pipeline UAMI
 
-**Goal: fulfil the RBAC requirements from section 2 so the pipeline can perform provisioning, bootstrap, and the final subscription move.**
+**Goal: fulfill the RBAC requirements from section 2 so the pipeline can perform provisioning, bootstrap, and the final subscription move.**
 
 Roles to assign:
 

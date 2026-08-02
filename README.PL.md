@@ -1,15 +1,15 @@
 # Azure Subscription Vending
 
-Pipeline Azure DevOps do automatycznego provisioningu subskrypcji i umieszczania ich w strukturze Management Group.
+Pipeline Azure DevOps do automatycznego przygotowania subskrypcji i umieszczania ich w strukturze Management Group.
 
-> Uwaga: To rozwiązanie zostało przygotowane z pomocą AI: GitHub Copilot i Claude Code.
+> Uwaga: W projekcie wykorzystano narzędzia AI (GitHub Copilot i Claude Code) do wsparcia analizy, przygotowania wersji roboczych i dokumentacji. Decyzje architektoniczne, walidację oraz finalną implementację wykonał autor.
 
 ## Co robi pipeline
 
 1. Waliduje subskrypcję i parametry wejściowe
 2. Zmienia nazwę subskrypcji i rejestruje wymaganych dostawców zasobów
-3. Wdraża zasoby bootstrap (Resource Group + User Assigned Managed Identity) przez Bicep
-4. Nadaje role bootstrap UAMI na scope subskrypcji
+3. Wdraża zasoby bootstrap (Resource Group + User Assigned Managed Identity) przy użyciu Bicep
+4. Nadaje role bootstrap UAMI w zakresie subskrypcji
 5. Tworzy Service Connection w Azure DevOps dla nowej subskrypcji *(opcjonalne)*
 6. Przenosi subskrypcję do docelowego Management Group
 7. Weryfikuje finalne umieszczenie
@@ -19,7 +19,7 @@ Pipeline Azure DevOps do automatycznego provisioningu subskrypcji i umieszczania
 ```
 .pipelines/subscription-vending.yml   # Pipeline Azure DevOps
 bin/subscriptionVendingBootstrap.sh   # Skrypt bootstrap (bash)
-bicep/bootstrap.bicep                # Szablon Bicep dla zasobów bootstrap
+bicep/bootstrap.bicep                 # Szablon Bicep dla zasobów bootstrap
 parameters/subscriptionVending.json   # Grupy rejestracji providerów i definicje ról UAMI
 SUBSCRIPTION_VENDING_RUNBOOK.md       # Instrukcja operatora: konfiguracja RBAC i checklist
 ```
@@ -59,9 +59,9 @@ Wymaganie wstępne:
 
 - Rozwiązanie wymaga utworzenia dedykowanej gałęzi Management Group dla pustych subskrypcji (landing/staging), w której pipeline będzie wykonywał bootstrap i przypisania RBAC.
 
-## 2. Co pipeline robi i jakie ma wymagania
+## 2. Działanie pipeline i wymagania
 
-Pipeline jest uruchamiany przez Azure DevOps na Azure DevOps Managed Pool, które posiadają dedykowany UAMI (User Assigned Managed Identity). UAMI wykonuje operacje Azure (ARM), a operacje Azure DevOps API są wykonywane przez `$(System.AccessToken)` jako tożsamość Build Service projektu.
+Pipeline jest uruchamiany w Azure DevOps na Managed Pool z dedykowanym UAMI (User Assigned Managed Identity). UAMI wykonuje operacje Azure (ARM), a operacje Azure DevOps API są wykonywane przez `$(System.AccessToken)` jako tożsamość Build Service projektu.
 
 Zakres działań pipeline:
 
@@ -84,20 +84,20 @@ Wymagania wynikające z działań pipeline:
 
 Poniżej jest docelowa kolejność procesu (MOVE na końcu).
 
-| Kolejność | Stage (pipeline) | Mode w skrypcie | Co jest wykonywane |
+| Kolejność | Stage (pipeline) | Tryb skryptu | Co jest wykonywane |
 | --- | --- | --- | --- |
 | 1 | ValidateInput | `validate` | Walidacja wejścia i stanu: parametry, istnienie subskrypcji, istnienie source/target MG, obecność pliku Bicep, sprawdzenie czy subskrypcja jest w source lub target MG. |
-| 2 | PrepareSubscription | `prepare` | Prepare = rename subskrypcji (opcjonalnie) oraz rejestracja providerów z `parameters/subscriptionVending.json`. |
+| 2 | PrepareSubscription | `prepare` | Zmiana nazwy subskrypcji oraz rejestracja providerów z `parameters/subscriptionVending.json`. |
 | 3 | BootstrapAzure | `bootstrap` | Deployment Bicep `bicep/bootstrap.bicep` na poziomie subskrypcji: utworzenie bootstrap RG oraz UAMI. |
 | 4 | ConfigureAccess | `rbac` | Nadanie ról dla bootstrap UAMI na scope subskrypcji (`/subscriptions/<id>`) zgodnie z `parameters/subscriptionVending.json`. |
 | 5 | ConfigureDevOps *(opcjonalny)* | `service-connection-manifest` | Przygotowanie i publikacja artefaktu `service-connection-manifest.json` dla utworzenia Service Connection (OIDC do UAMI). **Wymaga, aby konto Build Service projektu miało uprawnienia Endpoint Creators w projekcie Azure DevOps.** Jeśli konto Build Service nie ma tych uprawnień, stage jest pomijany (`CreateServiceConnection=false`) — operator tworzy Service Connection ręcznie korzystając z danych bootstrap (subscription ID, UAMI client ID, tenant ID). Plik `service-connection-manifest.json` jest dostępny jako artefakt pipeline (`subscription-vending-service-connection`) w zakładce Artifacts danego runu w Azure DevOps. |
 | 6 | VerifyBootstrap | `verify-bootstrap` | Weryfikacja stanu po bootstrap: istnieją bootstrap RG i UAMI oraz przygotowany manifest Service Connection. |
-| 7 | FinalMove | `move` | Finalny move subskrypcji do docelowej gałęzi MG. |
+| 7 | FinalMove | `move` | Finalne przeniesienie subskrypcji do docelowej gałęzi MG. |
 | 8 | VerifyFinal | `verify-final` | Końcowa weryfikacja: subskrypcja znajduje się w docelowej gałęzi MG. |
 
-## 4. Instrukcja krok po kroku: nadanie ról dla UAMI do procesu subscription vending
+## 4. Instrukcja krok po kroku: nadanie ról UAMI dla procesu subscription vending
 
-**Cel: Zrealizować wymagania RBAC opisane w sekcji 2, aby pipeline mógł poprawnie wykonać provisioning, bootstrap i finalny move subskrypcji.**
+**Cel: Zrealizować wymagania RBAC opisane w sekcji 2, aby pipeline mógł poprawnie wykonać provisioning, bootstrap i finalne przeniesienie subskrypcji.**
 
 Zakres działania:
 
