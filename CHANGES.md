@@ -17,4 +17,3 @@ Initial public release of the Azure Subscription Vending solution.
 
 - Pipeline and documentation aligned to the current bootstrap template path (`bicep/bootstrap.bicep`).
 - Parameter comments added to the pipeline for clarity.
-

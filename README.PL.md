@@ -14,7 +14,7 @@ Pipeline Azure DevOps do automatycznego przygotowania subskrypcji i umieszczania
 
 ## Struktura repozytorium
 
-```
+```text
 .pipelines/subscriptionVending.yml    # Pipeline Azure DevOps
 bin/subscriptionVending.sh            # Skrypt subscription vending (bash)
 bicep/bootstrap.bicep                 # Szablon Bicep dla zasobów bootstrap
@@ -198,9 +198,11 @@ Oczekiwany wynik:
 Pipeline tworzy Service Connection przez REST API Azure DevOps używając tokenu `$(System.AccessToken)`. Ten token reprezentuje **wbudowane konto build service projektu** — nie UAMI z Managed Pool.
 
 Nazwa konta ma format:
-```
+
+```text
 <ProjectName> Build Service (<OrgName>)
 ```
+
 Przykład: `ProjectA Build Service (Contoso)`
 
 > **Uwaga:** UAMI przypisane do Managed Pool jest używane do operacji na Azure (ARM). Do operacji na Azure DevOps API pipeline używa `$(System.AccessToken)` — to osobna tożsamość.
