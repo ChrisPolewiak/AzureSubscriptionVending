@@ -2,8 +2,6 @@
 
 Pipeline Azure DevOps do automatycznego przygotowania subskrypcji i umieszczania ich w strukturze Management Group.
 
-> Uwaga: W projekcie wykorzystano narzędzia AI (GitHub Copilot i Claude Code) do wsparcia analizy, przygotowania wersji roboczych i dokumentacji. Decyzje architektoniczne, walidację oraz finalną implementację wykonał autor.
-
 ## Co robi pipeline
 
 1. Waliduje subskrypcję i parametry wejściowe
@@ -249,3 +247,7 @@ Oczekiwany wynik: konto `<ProjectName> Build Service (<OrgName>)` widoczne w li�
 - rola User Access Administrator dla UAMI pipeline jest ustawiona jako "Allow user to assign all roles (highly privileged)" (bez warunków/ograniczeń)
 - konto **`<ProjectName> Build Service (<OrgName>)`** jest dodane do grupy **Endpoint Creators** w każdym projekcie Azure DevOps, w którym pipeline tworzy Service Connections
 - kolejność etapów pipeline jest zgodna z modelem RBAC
+
+## Uwagi
+
+- W projekcie wykorzystano narzędzia AI (GitHub Copilot i Claude Code) do wsparcia analizy, przygotowania wersji roboczych i dokumentacji. Decyzje architektoniczne, walidację oraz finalną implementację wykonał autor.

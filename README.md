@@ -2,8 +2,6 @@
 
 Azure DevOps pipeline for automated subscription provisioning and placement within the Management Group hierarchy.
 
-> Note: During development, AI tools (GitHub Copilot and Claude Code) were used to support research, drafting, and documentation, while architecture decisions, validation, and final implementation choices were made by the author.
-
 ## What it does
 
 1. Validates the subscription and input parameters
@@ -230,3 +228,7 @@ Expected result: `<ProjectName> Build Service (<OrgName>)` visible in the list.
 - User Access Administrator assignment is set to "Allow user to assign all roles (highly privileged)" (no conditions)
 - **`<ProjectName> Build Service (<OrgName>)`** added to **Endpoint Creators** in every Azure DevOps project where the pipeline creates Service Connections
 - pipeline stage order matches the RBAC model
+
+## Notes
+
+- During development, AI tools (GitHub Copilot and Claude Code) were used to support research, drafting, and documentation, while architecture decisions, validation, and final implementation choices were made by the author.
